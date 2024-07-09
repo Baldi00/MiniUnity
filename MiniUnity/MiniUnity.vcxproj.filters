@@ -20,10 +20,23 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment_shader.frag">
+    <Image Include="resources\background.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\texture.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="resources\hey_comic.ttf">
+      <Filter>Resource Files</Filter>
+    </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\fragment_shader.glsl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="vertex_shader.vert">
+    <None Include="resources\vertex_shader.glsl">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -1,195 +1,462 @@
-#include <SFML/Window.hpp>
+
+////////////////////////////////////////////////////////////
+// Headers
+////////////////////////////////////////////////////////////
+
+/// GLEW is needed to provide OpenGL extensions.
+#include <GL/glew.h>
+
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
 
-int main()
+/// GLM is needed to provide 3D math properties, particularly matrices for 3D transformations.
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/glm.hpp" 
+#include "glm/gtx/transform.hpp"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+#ifndef GL_SRGB8_ALPHA8
+#define GL_SRGB8_ALPHA8 0x8C43
+#endif
+
+///Shader Types
+enum class ShaderType { Vertex, Fragment, Geometry, Count };
+///Standard Uniforms in the shader.
+enum class UniformType { TransformPVM, Count };
+///Vertex attributes for shaders and the input vertex array.
+enum class VertexAttribute { Position, TexCoord, Normal, Count };
+
+///Shader Program
+GLuint program = 0;
+
+///List of shaders set up for a 3D scene.
+GLuint shader[static_cast<unsigned int>(ShaderType::Count)];
+///List of uniforms that can be defined values for the shader.
+GLint uniform[static_cast<unsigned int>(UniformType::Count)];
+
+///Vertex Array Object ID.
+GLuint vao = 0;
+///Vertex Buffer Object for Vertices.
+GLuint vertexVBO = 0;
+///Vertex Buffer Object for Indices.
+GLuint indexVBO = 0;
+///Depending on input, the amount of vertices or indices that are needed to be drawn for this object.
+unsigned int drawCount;
+
+///Checks for any errors specific to the shaders. It will output any errors within the shader if it's not valid.
+void checkError(GLuint l_shader, GLuint l_flag, bool l_program, const std::string& l_errorMsg)
 {
-    sf::Shader shader;
+    GLint success = 0;
+    GLchar error[1024] = { 0 };
+    if (l_program) { glGetProgramiv(l_shader, l_flag, &success); }
+    else { glGetShaderiv(l_shader, l_flag, &success); }
 
-    // load only the vertex shader
-    //if (!shader.loadFromMemory(vertexShader, sf::Shader::Vertex))
-    //{
-    //    // error...
-    //}
+    if (success) { return; }
+    if (l_program) {
+        glGetProgramInfoLog(l_shader, sizeof(error), nullptr, error);
+    }
+    else {
+        glGetShaderInfoLog(l_shader, sizeof(error), nullptr, error);
+    }
 
-    //// load only the fragment shader
-    //if (!shader.loadFromMemory(fragmentShader, sf::Shader::Fragment))
-    //{
-    //    // error...
-    //}
+    std::cout << l_errorMsg << "\n";
+}
 
-    // load both shaders
-    if (!shader.loadFromFile("vertex_shader.vert", "fragment_shader.frag"))
-    {
-        // error...
+///Creates and compiles a shader.
+GLuint buildShader(const std::string& l_src, unsigned int l_type)
+{
+    GLuint shaderID = glCreateShader(l_type);
+    if (!shaderID) {
+        std::cout << "Bad shader type!";
         return 0;
     }
+    const GLchar* sources[1];
+    GLint lengths[1];
+    sources[0] = l_src.c_str();
+    lengths[0] = l_src.length();
+    glShaderSource(shaderID, 1, sources, lengths);
+    glCompileShader(shaderID);
+    checkError(shaderID, GL_COMPILE_STATUS, false, "Shader compile error: ");
+    return shaderID;
+}
 
-    // create the window
-    sf::Window window(sf::VideoMode(1920, 1080), "OpenGL", sf::Style::Default, sf::ContextSettings(32));
-    window.setVerticalSyncEnabled(true);
+///Function to load the shaders from string data.
+void LoadFromMemory(const std::string& shaderData, ShaderType type)
+{
+    if (shaderData.empty())
+        return;
 
-    // activate the window
-    window.setActive(true);
-
-    // load resources, initialize the OpenGL states, ...
-
-    // clear the buffers
-    glClearColor(0.2, 0.2, 0.2, 1.0);
-    glColor3f(1.0, 1.0, 1.0);
-
-    // Tell the rendering engine not to draw backfaces.  Without this code,
-    // all four faces of the tetrahedron would be drawn and it is possible
-    // that faces farther away could be drawn after nearer to the viewer.
-    // Since there is only one closed polyhedron in the whole scene,
-    // eliminating the drawing of backfaces gives us the realism we need.
-    // THIS DOES NOT WORK IN GENERAL.
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-
-    // Set the camera lens so that we have a perspective viewing volume whose
-    // horizontal bounds at the near clipping plane are -2..2 and vertical
-    // bounds are -1.5..1.5.  The near clipping plane is 1 unit from the camera
-    // and the far clipping plane is 40 units away.
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glFrustum(-2, 2, -1.125, 1.125, 1, 100);
-
-    // Set up transforms so that the tetrahedron which is defined right at
-    // the origin will be rotated and moved into the view volume.  First we
-    // rotate 70 degrees around y so we can see a lot of the left side.
-    // Then we rotate 50 degrees around x to "drop" the top of the pyramid
-    // down a bit.  Then we move the object back 3 units "into the screen".
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glTranslatef(0, 0, -5);
-    glRotatef(30, 1, 0, 0);
-    glRotatef(-30, 0, 1, 0);
-
-    // run the main loop
-    bool running = true;
-
-    sf::Clock clock;
-
-    while (running)
+    if (shader[static_cast<unsigned int>(type)])
     {
-        float deltaTime = clock.restart().asSeconds();
-        // handle events
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-            {
-                // end the program
-                running = false;
-            }
-            else if (event.type == sf::Event::Resized)
-            {
-                // adjust the viewport when the window is resized
-                glViewport(0, 0, event.size.width, event.size.height);
-            }
-        }
-
-        glClear(GL_COLOR_BUFFER_BIT);
-        glMatrixMode(GL_MODELVIEW);
-        glRotatef(-(50 * deltaTime), 0, 1, 0);
-
-        // Draw a white grid "floor" for the tetrahedron to sit on.
-        glBegin(GL_LINES);
-
-        glColor3f(.3, .3, .3);
-        for (int i = -10; i < 10; i += 1)
-        {
-            glVertex3f(i, 0, -10); glVertex3f(i, 0, 10);
-            glVertex3f(-10, 0, i); glVertex3f(10, 0, i);
-        }
-
-        glColor3f(1, 0, 0);
-        glVertex3f(0, 0, 0); glVertex3f(100, 0, 0);
-        glColor3f(0, 1, 0);
-        glVertex3f(0, 0, 0); glVertex3f(0, 100, 0);
-        glColor3f(0, 0, 1);
-        glVertex3f(0, 0, 0); glVertex3f(0, 0, 100);
-
-        glEnd();
-
-        // Draw the tetrahedron.  It is a four sided figure, so when defining it
-        // with a triangle strip we have to repeat the last two vertices.
-
-        sf::Shader::bind(&shader);
-
-        // draw your OpenGL entity here...
-
-        glBegin(GL_QUADS);
-        glColor3f(1, 1, 1);
-
-        // Front face
-        glNormal3f(0, 0, 1);
-        glVertex3f(-1, 0, 1);
-        glNormal3f(0, 0, 1);
-        glVertex3f(1, 0, 1);
-        glNormal3f(0, 0, 1);
-        glVertex3f(1, 2, 1);
-        glNormal3f(0, 0, 1);
-        glVertex3f(-1, 2, 1);
-        // Back face
-        glNormal3f(0, 1, 1);
-        glVertex3f(-1, 2, -1);
-        glNormal3f(0, 1, 1);
-        glVertex3f(1, 2, -1);
-        glNormal3f(0, 1, 1);
-        glVertex3f(1, 0, -1);
-        glNormal3f(0, 1, 1);
-        glVertex3f(-1, 0, -1);
-        // Left face
-        glNormal3f(1, 1, 0);
-        glVertex3f(-1, 0, 1);
-        glNormal3f(1, 1, 0);
-        glVertex3f(-1, 2, 1);
-        glNormal3f(1, 1, 0);
-        glVertex3f(-1, 2, -1);
-        glNormal3f(1, 1, 0);
-        glVertex3f(-1, 0, -1);
-        // Right face
-        glNormal3f(1, 0, 0);
-        glVertex3f(1, 0, -1);
-        glNormal3f(1, 0, 0);
-        glVertex3f(1, 2, -1);
-        glNormal3f(1, 0, 0);
-        glVertex3f(1, 2, 1);
-        glNormal3f(1, 0, 0);
-        glVertex3f(1, 0, 1);
-        // Up face
-        glNormal3f(0, 1, 0);
-        glVertex3f(-1, 2, 1);
-        glNormal3f(0, 1, 0);
-        glVertex3f(1, 2, 1);
-        glNormal3f(0, 1, 0);
-        glVertex3f(1, 2, -1);
-        glNormal3f(0, 1, 0);
-        glVertex3f(-1, 2, -1);
-        // Down face
-        glNormal3f(1, 1, 1);
-        glVertex3f(-1, 0, -1);
-        glNormal3f(1, 1, 1);
-        glVertex3f(1, 0, -1);
-        glNormal3f(1, 1, 1);
-        glVertex3f(1, 0, 1);
-        glNormal3f(1, 1, 1);
-        glVertex3f(-1, 0, 1);
-
-        glEnd();
-
-        // bind no shader
-        sf::Shader::bind(NULL);
-
-        glFlush();
-
-        // end the current frame (internally swaps the front and back buffers)
-        window.display();
+        glDetachShader(program, shader[static_cast<unsigned int>(type)]);
+        glDeleteShader(shader[static_cast<unsigned int>(type)]);
     }
 
-    // release resources...
+    switch (type)
+    {
+    case ShaderType::Vertex:
+        shader[static_cast<unsigned int>(type)] = buildShader(shaderData, GL_VERTEX_SHADER);
+        break;
+    case ShaderType::Geometry:
+        shader[static_cast<unsigned int>(type)] = buildShader(shaderData, GL_GEOMETRY_SHADER);
+        break;
+    case ShaderType::Fragment:
+        shader[static_cast<unsigned int>(type)] = buildShader(shaderData, GL_FRAGMENT_SHADER);
+        break;
+    default:
+        break;
+    }
 
-    return 0;
+    if (program == 0)
+    {
+        program = glCreateProgram();
+    }
+
+    glAttachShader(program, shader[static_cast<unsigned int>(type)]);
+    glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::Position), "position");
+    glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::TexCoord), "texCoord");
+    glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::Normal), "normal");
+
+    glLinkProgram(program);
+    checkError(program, GL_LINK_STATUS, true, "Shader link error:");
+    glValidateProgram(program);
+    checkError(program, GL_VALIDATE_STATUS, true, "Invalid shader:");
+
+    uniform[static_cast<unsigned int>(UniformType::TransformPVM)] = glGetUniformLocation(program, "pvm");
+}
+
+std::string loadShaderFromFile(const std::string& filePath)
+{
+    std::ifstream shaderFile(filePath);
+    if (!shaderFile.is_open())
+    {
+        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+        return "";
+    }
+
+    std::stringstream shaderData;
+    shaderData << shaderFile.rdbuf();
+    shaderFile.close();
+
+    return shaderData.str();
+}
+
+////////////////////////////////////////////////////////////
+/// Entry point of application
+///
+/// \return Application exit code
+///
+////////////////////////////////////////////////////////////
+int main()
+{
+    bool exit = false;
+    bool sRgb = false;
+
+    while (!exit)
+    {
+        // Request a 24-bits depth buffer when creating the window
+        sf::ContextSettings contextSettings;
+        contextSettings.depthBits = 24;
+        contextSettings.sRgbCapable = sRgb;
+
+        // Create the main window
+        sf::RenderWindow window(sf::VideoMode(800, 600), "SFML graphics with OpenGL", sf::Style::Default, contextSettings);
+        window.setVerticalSyncEnabled(true);
+
+        // Initialise GLEW for the extended functions.
+        glewExperimental = GL_TRUE;
+        if (glewInit() != GLEW_OK)
+            return EXIT_FAILURE;
+
+        // Create a sprite for the background
+        sf::Texture backgroundTexture;
+        backgroundTexture.setSrgb(sRgb);
+        if (!backgroundTexture.loadFromFile("resources/background.jpg"))
+            return EXIT_FAILURE;
+        sf::Sprite background(backgroundTexture);
+
+        // Create some text to draw on top of our OpenGL object
+        sf::Font font;
+        if (!font.loadFromFile("resources/hey_comic.ttf"))
+            return EXIT_FAILURE;
+        sf::Text text("SFML / OpenGL demo", font);
+        sf::Text sRgbInstructions("Press space to toggle sRGB conversion", font);
+        sf::Text mipmapInstructions("Press return to toggle mipmapping", font);
+        text.setFillColor(sf::Color(255, 255, 255, 170));
+        sRgbInstructions.setFillColor(sf::Color(255, 255, 255, 170));
+        mipmapInstructions.setFillColor(sf::Color(255, 255, 255, 170));
+        text.setPosition(250.f, 450.f);
+        sRgbInstructions.setPosition(150.f, 500.f);
+        mipmapInstructions.setPosition(180.f, 550.f);
+
+        // Load a texture to apply to our 3D cube
+        sf::Texture texture;
+        if (!texture.loadFromFile("resources/texture.jpg"))
+            return EXIT_FAILURE;
+
+        // Attempt to generate a mipmap for our cube texture
+        // We don't check the return value here since
+        // mipmapping is purely optional in this example
+        texture.generateMipmap();
+
+        // Make the window the active window for OpenGL calls
+        window.setActive(true);
+
+        // Load the shaders we need.
+        if (program == 0)
+        {
+            LoadFromMemory(loadShaderFromFile("resources/vertex_shader.glsl"), ShaderType::Vertex);
+            LoadFromMemory(loadShaderFromFile("resources/fragment_shader.glsl"), ShaderType::Fragment);
+        }
+
+        // Enable Z-buffer read and write and culling.
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
+        // Setup a perspective projection
+        GLfloat ratio = static_cast<float>(window.getSize().x) / window.getSize().y;
+        glm::mat4 projection = glm::frustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.0f);
+
+        // Define a 3D cube (6 faces made of 2 triangles composed by 3 indices of a list of vertices)
+        static const GLfloat cube[] =
+        {
+            // positions   // texture coordinates   // normals
+           //front
+           -20, -20, -20,  0, 0,  0, 0, 1,
+            20, -20, -20,  1, 0,  0, 0, 1,
+            20,  20, -20,  1, 1,  0, 0, 1,
+           -20,  20, -20,  0, 1,  0, 0, 1,
+           //right
+            20,  20, -20,  1, 1,  1, 0, 0,
+            20,  20,  20,  0, 1,  1, 0, 0,
+            20, -20,  20,  0, 0,  1, 0, 0,
+            20, -20, -20,  1, 0,  1, 0, 0,
+            //back
+            -20, -20,  20,  0, 0,  0, 0, 1,
+             20, -20,  20,  1, 0,  0, 0, 1,
+             20,  20,  20,  1, 1,  0, 0, 1,
+            -20,  20,  20,  0, 1,  0, 0, 1,
+            //left
+            -20, -20,  20,  0, 0,  1, 0, 0,
+            -20, -20, -20,  1, 0,  1, 0, 0,
+            -20,  20, -20,  1, 1,  1, 0, 0,
+            -20,  20,  20,  0, 1,  1, 0, 0,
+            //upper
+             20, -20,  20,  0, 1,  0, 1, 0,
+            -20, -20,  20,  1, 1,  0, 1, 0,
+            -20, -20, -20,  1, 0,  0, 1, 0,
+             20, -20, -20,  0, 0,  0, 1, 0,
+             //bottom
+             -20,  20, -20,  0, 1,  0, 1, 0,
+              20,  20, -20,  1, 1,  0, 1, 0,
+              20,  20,  20,  1, 0,  0, 1, 0,
+             -20,  20,  20,  0, 0,  0, 1, 0,
+        };
+
+        // Define indices for 3D cube.
+        static const unsigned int indices[] =
+        {
+            2, 1, 0, 3, 2, 0, //front
+            4, 5, 6, 4, 6, 7, //right
+            8, 9, 10, 8, 10, 11, //back
+            14, 13, 12, 15, 14, 12, //left
+            16, 17, 18, 16, 18, 19, //upper
+            22, 21, 20, 23, 22, 20  //bottom
+        };
+
+        // Stride is the number of bytes per array element.
+        auto stride = sizeof(GLfloat) * 8;
+        // Data offset for texture coordinate in bytes.
+        auto textureCoordOffset = sizeof(GLfloat) * 3;
+        // Data offset for texture coordinate in bytes.
+        auto normalOffset = sizeof(GLfloat) * 5;
+        // Amount of index elements in total.
+        drawCount = sizeof(indices) / sizeof(unsigned int);
+
+
+        // Generate Vertex Array and Vertex Buffer and point the area of data to assign to each attribute.
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        glGenBuffers(1, &vertexVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+        glBufferData(GL_ARRAY_BUFFER, drawCount * stride, cube, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Position));
+        glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::Position), 3, GL_FLOAT, GL_FALSE, stride, 0);
+        glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::TexCoord));
+        glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::TexCoord), 2, GL_FLOAT, GL_FALSE, stride, (void*)textureCoordOffset);
+        glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Normal));
+        glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::Normal), 3, GL_FLOAT, GL_FALSE, stride, (void*)normalOffset);
+
+        // Generate Index Buffer and define the amount of indices to point to.
+        glGenBuffers(1, &indexVBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, drawCount * sizeof(indices[0]), indices, GL_STATIC_DRAW);
+
+        //Make sure to bind the vertex array to null if you wish to define more objects.
+        glBindVertexArray(0);
+
+        // Make the window no longer the active window for OpenGL calls
+        window.setActive(false);
+
+        // Create a clock for measuring the time elapsed
+        sf::Clock clock;
+
+        // Flag to track whether mipmapping is currently enabled
+        bool mipmapEnabled = true;
+
+        // Start game loop
+        while (window.isOpen())
+        {
+            // Process events
+            sf::Event event;
+            while (window.pollEvent(event))
+            {
+                // Close window: exit
+                if (event.type == sf::Event::Closed)
+                {
+                    exit = true;
+                    window.close();
+                }
+
+                // Escape key: exit
+                if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape))
+                {
+                    exit = true;
+                    window.close();
+                }
+
+                // Return key: toggle mipmapping
+                if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Return))
+                {
+                    if (mipmapEnabled)
+                    {
+                        // We simply reload the texture to disable mipmapping
+                        if (!texture.loadFromFile("resources/texture.jpg"))
+                            return EXIT_FAILURE;
+
+                        mipmapEnabled = false;
+                    }
+                    else
+                    {
+                        texture.generateMipmap();
+
+                        mipmapEnabled = true;
+                    }
+                }
+
+                // Space key: toggle sRGB conversion
+                if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Space))
+                {
+                    sRgb = !sRgb;
+                    window.close();
+                }
+
+                // Adjust the viewport when the window is resized
+                if (event.type == sf::Event::Resized)
+                {
+                    // Make the window the active window for OpenGL calls
+                    window.setActive(true);
+
+                    glViewport(0, 0, event.size.width, event.size.height);
+
+                    // Make the window no longer the active window for OpenGL calls
+                    window.setActive(false);
+                }
+            }
+
+            // Clear the depth buffer
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // Configure the viewport (the same size as the window)
+            glViewport(0, 0, window.getSize().x, window.getSize().y);
+
+            // Draw the background
+            window.pushGLStates();
+            window.draw(background);
+            window.popGLStates();
+
+            // Make the window the active window for OpenGL calls
+            window.setActive(true);
+
+            // Bind the texture
+            sf::Texture::bind(&texture);
+            glBindVertexArray(vao);
+
+            // We get the position of the mouse cursor, so that we can move the box accordingly
+            float x = sf::Mouse::getPosition(window).x * 200.f / window.getSize().x - 100.f;
+            float y = -sf::Mouse::getPosition(window).y * 200.f / window.getSize().y + 100.f;
+
+            // Apply some transformations
+            glm::mat4 matrix_pos = glm::translate(glm::vec3(x, y, -100.f));
+            glm::mat4 matrix_rotX = glm::rotate(clock.getElapsedTime().asSeconds() * 50.f * (3.1415926f / 180.0f), glm::vec3(1.f, 0.f, 0.f));
+            glm::mat4 matrix_rotY = glm::rotate(clock.getElapsedTime().asSeconds() * 30.f * (3.1415926f / 180.0f), glm::vec3(0.f, 1.f, 0.f));
+            glm::mat4 matrix_rotZ = glm::rotate(clock.getElapsedTime().asSeconds() * 90.f * (3.1415926f / 180.0f), glm::vec3(0.f, 0.f, 1.f));
+
+            glm::mat4 matrix_rotation = matrix_rotZ * matrix_rotY * matrix_rotX;
+            glm::mat4 transform = matrix_pos * matrix_rotation;
+
+            glm::mat4 identity;
+            glm::mat4 viewProj = projection * transform;
+
+            //Bind the shaders.
+            glUseProgram(program);
+
+            //Set the uniforms for the shader to use.
+            if (uniform[(int)UniformType::TransformPVM] >= 0)
+                glUniformMatrix4fv((unsigned int)uniform[(int)UniformType::TransformPVM], 1, GL_FALSE, &viewProj[0][0]);
+
+            // Draw the cube
+            glDrawElements(GL_TRIANGLES, drawCount, GL_UNSIGNED_INT, 0);
+
+            // Reset the vertex array bound, shader and texture for other assets to draw.
+            glBindVertexArray(0);
+            glUseProgram(0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            // Make the window no longer the active window for OpenGL calls
+            window.setActive(false);
+
+            // Draw some text on top of our OpenGL object
+            window.pushGLStates();
+            window.draw(text);
+            window.draw(sRgbInstructions);
+            window.draw(mipmapInstructions);
+            window.popGLStates();
+
+            // Finally, display the rendered frame on screen
+            window.display();
+        }
+
+        //Destroy all buffers, shaders and programs.
+        glDeleteBuffers(1, &vertexVBO);
+        glDeleteBuffers(1, &indexVBO);
+        glDeleteVertexArrays(1, &vao);
+
+        //Setting these values to zero will allow them to be initialised with new data on reset.
+        vertexVBO = 0;
+        indexVBO = 0;
+        vao = 0;
+
+        for (unsigned int i = 0; i < static_cast<unsigned int>(ShaderType::Count); i++)
+        {
+            glDetachShader(program, shader[i]);
+            glDeleteShader(shader[i]);
+            shader[i] = 0;
+        }
+
+        for (unsigned int i = 0; i < static_cast<unsigned int>(UniformType::Count); i++)
+        {
+            uniform[i] = -1;
+        }
+
+        glDeleteProgram(program);
+        program = 0;
+    }
+
+    return EXIT_SUCCESS;
 }
