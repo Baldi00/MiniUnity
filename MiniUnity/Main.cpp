@@ -18,6 +18,9 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
+
+#include "Engine/FbxImporter.h"
 
 #ifndef GL_SRGB8_ALPHA8
 #define GL_SRGB8_ALPHA8 0x8C43
@@ -28,7 +31,7 @@ enum class ShaderType { Vertex, Fragment, Geometry, Count };
 ///Standard Uniforms in the shader.
 enum class UniformType { TransformPVM, Count };
 ///Vertex attributes for shaders and the input vertex array.
-enum class VertexAttribute { Position, TexCoord, Normal, Count };
+enum class VertexAttribute { Position, Normal, TexCoord, Count };
 
 ///Shader Program
 GLuint program = 0;
@@ -118,8 +121,8 @@ void LoadFromMemory(const std::string& shaderData, ShaderType type)
 
     glAttachShader(program, shader[static_cast<unsigned int>(type)]);
     glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::Position), "position");
-    glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::TexCoord), "texCoord");
     glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::Normal), "normal");
+    glBindAttribLocation(program, static_cast<GLuint>(VertexAttribute::TexCoord), "texCoord");
 
     glLinkProgram(program);
     checkError(program, GL_LINK_STATUS, true, "Shader link error:");
@@ -164,7 +167,7 @@ int main()
         contextSettings.sRgbCapable = sRgb;
 
         // Create the main window
-        sf::RenderWindow window(sf::VideoMode(800, 600), "SFML graphics with OpenGL", sf::Style::Default, contextSettings);
+        sf::RenderWindow window(sf::VideoMode(1920, 1080), "SFML graphics with OpenGL", sf::Style::Default, contextSettings);
         window.setVerticalSyncEnabled(true);
 
         // Initialise GLEW for the extended functions.
@@ -220,63 +223,19 @@ int main()
 
         // Setup a perspective projection
         GLfloat ratio = static_cast<float>(window.getSize().x) / window.getSize().y;
-        glm::mat4 projection = glm::frustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.0f);
+        glm::mat4 projection = glm::frustum(-ratio, ratio, -1.f, 1.f, 1.f, 1000.0f);
 
-        // Define a 3D cube (6 faces made of 2 triangles composed by 3 indices of a list of vertices)
-        static const GLfloat cube[] =
-        {
-            // positions   // texture coordinates   // normals
-           //front
-           -20, -20, -20,  0, 0,  0, 0, 1,
-            20, -20, -20,  1, 0,  0, 0, 1,
-            20,  20, -20,  1, 1,  0, 0, 1,
-           -20,  20, -20,  0, 1,  0, 0, 1,
-           //right
-            20,  20, -20,  1, 1,  1, 0, 0,
-            20,  20,  20,  0, 1,  1, 0, 0,
-            20, -20,  20,  0, 0,  1, 0, 0,
-            20, -20, -20,  1, 0,  1, 0, 0,
-            //back
-            -20, -20,  20,  0, 0,  0, 0, 1,
-             20, -20,  20,  1, 0,  0, 0, 1,
-             20,  20,  20,  1, 1,  0, 0, 1,
-            -20,  20,  20,  0, 1,  0, 0, 1,
-            //left
-            -20, -20,  20,  0, 0,  1, 0, 0,
-            -20, -20, -20,  1, 0,  1, 0, 0,
-            -20,  20, -20,  1, 1,  1, 0, 0,
-            -20,  20,  20,  0, 1,  1, 0, 0,
-            //upper
-             20, -20,  20,  0, 1,  0, 1, 0,
-            -20, -20,  20,  1, 1,  0, 1, 0,
-            -20, -20, -20,  1, 0,  0, 1, 0,
-             20, -20, -20,  0, 0,  0, 1, 0,
-             //bottom
-             -20,  20, -20,  0, 1,  0, 1, 0,
-              20,  20, -20,  1, 1,  0, 1, 0,
-              20,  20,  20,  1, 0,  0, 1, 0,
-             -20,  20,  20,  0, 0,  0, 1, 0,
-        };
+        std::vector<GLfloat> objectVertices;
+        std::vector<GLuint> objectTriangles;
 
-        // Define indices for 3D cube.
-        static const unsigned int indices[] =
-        {
-            2, 1, 0, 3, 2, 0, //front
-            4, 5, 6, 4, 6, 7, //right
-            8, 9, 10, 8, 10, 11, //back
-            14, 13, 12, 15, 14, 12, //left
-            16, 17, 18, 16, 18, 19, //upper
-            22, 21, 20, 23, 22, 20  //bottom
-        };
+        FbxImporter::ImportFBX("resources/Kleo.fbx", objectVertices, objectTriangles, drawCount);
 
         // Stride is the number of bytes per array element.
         auto stride = sizeof(GLfloat) * 8;
+        // Data offset for normals in bytes.
+        auto normalOffset = sizeof(GLfloat) * 3;
         // Data offset for texture coordinate in bytes.
-        auto textureCoordOffset = sizeof(GLfloat) * 3;
-        // Data offset for texture coordinate in bytes.
-        auto normalOffset = sizeof(GLfloat) * 5;
-        // Amount of index elements in total.
-        drawCount = sizeof(indices) / sizeof(unsigned int);
+        auto textureCoordOffset = sizeof(GLfloat) * 6;
 
 
         // Generate Vertex Array and Vertex Buffer and point the area of data to assign to each attribute.
@@ -284,18 +243,18 @@ int main()
         glBindVertexArray(vao);
         glGenBuffers(1, &vertexVBO);
         glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-        glBufferData(GL_ARRAY_BUFFER, drawCount * stride, cube, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, drawCount * stride, objectVertices.data(), GL_DYNAMIC_DRAW);
         glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Position));
         glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::Position), 3, GL_FLOAT, GL_FALSE, stride, 0);
-        glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::TexCoord));
-        glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::TexCoord), 2, GL_FLOAT, GL_FALSE, stride, (void*)textureCoordOffset);
         glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Normal));
         glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::Normal), 3, GL_FLOAT, GL_FALSE, stride, (void*)normalOffset);
+        glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::TexCoord));
+        glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::TexCoord), 2, GL_FLOAT, GL_FALSE, stride, (void*)textureCoordOffset);
 
         // Generate Index Buffer and define the amount of indices to point to.
         glGenBuffers(1, &indexVBO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, drawCount * sizeof(indices[0]), indices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, drawCount * sizeof(objectTriangles[0]), objectTriangles.data(), GL_DYNAMIC_DRAW);
 
         //Make sure to bind the vertex array to null if you wish to define more objects.
         glBindVertexArray(0);
@@ -377,7 +336,7 @@ int main()
 
             // Draw the background
             window.pushGLStates();
-            window.draw(background);
+            //window.draw(background);
             window.popGLStates();
 
             // Make the window the active window for OpenGL calls
@@ -392,10 +351,10 @@ int main()
             float y = -sf::Mouse::getPosition(window).y * 200.f / window.getSize().y + 100.f;
 
             // Apply some transformations
-            glm::mat4 matrix_pos = glm::translate(glm::vec3(x, y, -100.f));
-            glm::mat4 matrix_rotX = glm::rotate(clock.getElapsedTime().asSeconds() * 50.f * (3.1415926f / 180.0f), glm::vec3(1.f, 0.f, 0.f));
+            glm::mat4 matrix_pos = glm::translate(glm::vec3(x, y, -200.f));
+            glm::mat4 matrix_rotX = glm::rotate(clock.getElapsedTime().asSeconds() * 0.f * (3.1415926f / 180.0f), glm::vec3(1.f, 0.f, 0.f));
             glm::mat4 matrix_rotY = glm::rotate(clock.getElapsedTime().asSeconds() * 30.f * (3.1415926f / 180.0f), glm::vec3(0.f, 1.f, 0.f));
-            glm::mat4 matrix_rotZ = glm::rotate(clock.getElapsedTime().asSeconds() * 90.f * (3.1415926f / 180.0f), glm::vec3(0.f, 0.f, 1.f));
+            glm::mat4 matrix_rotZ = glm::rotate(clock.getElapsedTime().asSeconds() * 0.f * (3.1415926f / 180.0f), glm::vec3(0.f, 0.f, 1.f));
 
             glm::mat4 matrix_rotation = matrix_rotZ * matrix_rotY * matrix_rotX;
             glm::mat4 transform = matrix_pos * matrix_rotation;
@@ -423,9 +382,9 @@ int main()
 
             // Draw some text on top of our OpenGL object
             window.pushGLStates();
-            window.draw(text);
-            window.draw(sRgbInstructions);
-            window.draw(mipmapInstructions);
+            //window.draw(text);
+            //window.draw(sRgbInstructions);
+            //window.draw(mipmapInstructions);
             window.popGLStates();
 
             // Finally, display the rendered frame on screen

@@ -76,12 +76,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -93,14 +93,14 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -110,12 +110,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -127,18 +127,21 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glm-1.0.1-light;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\include;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\glew-2.1.0\lib\Release\x64;C:\Users\Andrea\Documents\GitHub\MiniUnity\ExternalLibraries\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\FbxImporter.cpp" />
+    <ClCompile Include="ExternalCode\OpenFBX\src\libdeflate.c" />
+    <ClCompile Include="ExternalCode\OpenFBX\src\ofbx.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,7 +153,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\fragment_shader.glsl" />
+    <None Include="resources\Hole.fbx" />
     <None Include="resources\vertex_shader.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Engine\FbxImporter.h" />
+    <ClInclude Include="ExternalCode\OpenFBX\src\libdeflate.h" />
+    <ClInclude Include="ExternalCode\OpenFBX\src\ofbx.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

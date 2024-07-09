@@ -13,10 +13,31 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\ExternalCode">
+      <UniqueIdentifier>{b37a4115-08d9-4f6e-828c-2811ed812a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ExternalCode\OpenFBX">
+      <UniqueIdentifier>{ad240114-0781-4fb7-9399-2b282e31c9f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Engine">
+      <UniqueIdentifier>{c31b52d5-077d-4068-93a6-bb757308bfad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{d551b411-8ef3-48db-a051-fd54418035be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExternalCode\OpenFBX\src\libdeflate.c">
+      <Filter>Source Files\ExternalCode\OpenFBX</Filter>
+    </ClCompile>
+    <ClCompile Include="ExternalCode\OpenFBX\src\ofbx.cpp">
+      <Filter>Source Files\ExternalCode\OpenFBX</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\FbxImporter.cpp">
+      <Filter>Source Files\Engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -39,5 +60,19 @@
     <None Include="resources\vertex_shader.glsl">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="resources\Hole.fbx">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ExternalCode\OpenFBX\src\libdeflate.h">
+      <Filter>Source Files\ExternalCode\OpenFBX</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalCode\OpenFBX\src\ofbx.h">
+      <Filter>Source Files\ExternalCode\OpenFBX</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\FbxImporter.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
