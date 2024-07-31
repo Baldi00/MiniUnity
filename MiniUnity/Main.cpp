@@ -26,6 +26,8 @@
 #define GL_SRGB8_ALPHA8 0x8C43
 #endif
 
+#define SHOW_FPS_SKIP_SECONDS 0.5f 
+
 ///Shader Types
 enum class ShaderType { Vertex, Fragment, Geometry, Count };
 ///Standard Uniforms in the shader.
@@ -47,8 +49,6 @@ GLuint vao = 0;
 GLuint vertexVBO = 0;
 ///Vertex Buffer Object for Indices.
 GLuint indexVBO = 0;
-///Depending on input, the amount of vertices or indices that are needed to be drawn for this object.
-unsigned int drawCount;
 
 ///Checks for any errors specific to the shaders. It will output any errors within the shader if it's not valid.
 void checkError(GLuint l_shader, GLuint l_flag, bool l_program, const std::string& l_errorMsg)
@@ -168,7 +168,7 @@ int main()
 
         // Create the main window
         sf::RenderWindow window(sf::VideoMode(1920, 1080), "SFML graphics with OpenGL", sf::Style::Default, contextSettings);
-        window.setVerticalSyncEnabled(true);
+        window.setVerticalSyncEnabled(false);
 
         // Initialise GLEW for the extended functions.
         glewExperimental = GL_TRUE;
@@ -228,7 +228,14 @@ int main()
         std::vector<GLfloat> objectVertices;
         std::vector<GLuint> objectTriangles;
 
-        FbxImporter::ImportFBX("resources/Kleo.fbx", objectVertices, objectTriangles, drawCount);
+        std::string diffuseTexturePath;
+        FbxImporter::ImportFBX("resources/Kleo.fbx", objectVertices, objectTriangles, diffuseTexturePath);
+
+        sf::Texture backgroundTexture2;
+        backgroundTexture2.setSrgb(sRgb);
+        if (!backgroundTexture2.loadFromFile(diffuseTexturePath))
+            return EXIT_FAILURE;
+        background = sf::Sprite(backgroundTexture2);
 
         // Stride is the number of bytes per array element.
         auto stride = sizeof(GLfloat) * 8;
@@ -243,7 +250,7 @@ int main()
         glBindVertexArray(vao);
         glGenBuffers(1, &vertexVBO);
         glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-        glBufferData(GL_ARRAY_BUFFER, drawCount * stride, objectVertices.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, objectVertices.size() * sizeof(GLfloat), objectVertices.data(), GL_STATIC_DRAW);
         glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Position));
         glVertexAttribPointer(static_cast<GLuint>(VertexAttribute::Position), 3, GL_FLOAT, GL_FALSE, stride, 0);
         glEnableVertexAttribArray(static_cast<GLuint>(VertexAttribute::Normal));
@@ -254,7 +261,7 @@ int main()
         // Generate Index Buffer and define the amount of indices to point to.
         glGenBuffers(1, &indexVBO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, drawCount * sizeof(objectTriangles[0]), objectTriangles.data(), GL_DYNAMIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, objectTriangles.size() * sizeof(objectTriangles[0]), objectTriangles.data(), GL_STATIC_DRAW);
 
         //Make sure to bind the vertex array to null if you wish to define more objects.
         glBindVertexArray(0);
@@ -268,9 +275,14 @@ int main()
         // Flag to track whether mipmapping is currently enabled
         bool mipmapEnabled = true;
 
+        float fpsSkipSecondsTimer = 0;
+        int currentFrameRate = 0;
+
         // Start game loop
         while (window.isOpen())
         {
+            float deltaTime = clock.restart().asSeconds();
+
             // Process events
             sf::Event event;
             while (window.pollEvent(event))
@@ -336,7 +348,7 @@ int main()
 
             // Draw the background
             window.pushGLStates();
-            //window.draw(background);
+            window.draw(background);
             window.popGLStates();
 
             // Make the window the active window for OpenGL calls
@@ -370,7 +382,7 @@ int main()
                 glUniformMatrix4fv((unsigned int)uniform[(int)UniformType::TransformPVM], 1, GL_FALSE, &viewProj[0][0]);
 
             // Draw the cube
-            glDrawElements(GL_TRIANGLES, drawCount, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, objectTriangles.size(), GL_UNSIGNED_INT, 0);
 
             // Reset the vertex array bound, shader and texture for other assets to draw.
             glBindVertexArray(0);
@@ -382,7 +394,19 @@ int main()
 
             // Draw some text on top of our OpenGL object
             window.pushGLStates();
-            //window.draw(text);
+
+            if (fpsSkipSecondsTimer >= SHOW_FPS_SKIP_SECONDS)
+            {
+                currentFrameRate = (int)(1.f / clock.restart().asSeconds());
+                fpsSkipSecondsTimer = 0;
+            }
+            else
+            {
+                fpsSkipSecondsTimer += deltaTime;
+            }
+
+            text = sf::Text(sf::String(std::to_string(currentFrameRate)), font);
+            window.draw(text);
             //window.draw(sRgbInstructions);
             //window.draw(mipmapInstructions);
             window.popGLStates();

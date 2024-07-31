@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include "gl/glew.h"
 #include <vector>
+#include <string>
 
-bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVertices, std::vector<GLuint>& outTriangles, unsigned int& outTrianglesCount)
+bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVertices, std::vector<GLuint>& outTriangles, std::string& diffuseTexturePath)
 {
     FILE* fp;
     fopen_s(&fp, filepath, "rb");
@@ -22,16 +23,16 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
         ofbx::LoadFlags::IGNORE_BLEND_SHAPES |
         ofbx::LoadFlags::IGNORE_CAMERAS |
         ofbx::LoadFlags::IGNORE_LIGHTS |
-        ofbx::LoadFlags::IGNORE_TEXTURES |
-        ofbx::LoadFlags::IGNORE_SKIN |
-        ofbx::LoadFlags::IGNORE_BONES |
+        //ofbx::LoadFlags::IGNORE_TEXTURES |
+        //ofbx::LoadFlags::IGNORE_SKIN |
+        //ofbx::LoadFlags::IGNORE_BONES |
         ofbx::LoadFlags::IGNORE_PIVOTS |
-        ofbx::LoadFlags::IGNORE_MATERIALS |
+        //ofbx::LoadFlags::IGNORE_MATERIALS |
         ofbx::LoadFlags::IGNORE_POSES |
         ofbx::LoadFlags::IGNORE_VIDEOS |
-        ofbx::LoadFlags::IGNORE_LIMBS |
+        ofbx::LoadFlags::IGNORE_LIMBS; //|
         //		ofbx::LoadFlags::IGNORE_MESHES |
-        ofbx::LoadFlags::IGNORE_ANIMATIONS;
+        //ofbx::LoadFlags::IGNORE_ANIMATIONS;
 
     ofbx::IScene* g_scene = ofbx::load((ofbx::u8*)content, file_size, (ofbx::u16)flags);
 
@@ -46,6 +47,15 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
     for (int mesh_idx = 0; mesh_idx < mesh_count; ++mesh_idx) {
         const ofbx::Mesh& mesh = *g_scene->getMesh(mesh_idx);
         const ofbx::GeometryData& geom = mesh.getGeometryData();
+        const ofbx::Skin* skin = mesh.getSkin();
+        const ofbx::Cluster* cluster = skin->getCluster(0);
+        
+        for (int ab = 0; ab < skin->getClusterCount(); ab++)
+        {
+            const int* indices = skin->getCluster(ab)->getIndices();
+            for (int cd = 0; cd < skin->getCluster(ab)->getIndicesCount(); cd++)
+                printf("%d\n", indices[cd]);
+        }
 
         // each ofbx::Mesh can have several materials == partitions
         for (int partition_idx = 0; partition_idx < geom.getPartitionCount(); ++partition_idx) {
@@ -53,7 +63,7 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
 
             for (int polygon_idx = 0; polygon_idx < partition.polygon_count; ++polygon_idx) {
                 const ofbx::GeometryPartition::Polygon& polygon = partition.polygons[polygon_idx];
-                
+
                 for (int i = polygon.from_vertex; i < polygon.from_vertex + polygon.vertex_count; ++i) {
                     polygonCount++;
                 }
@@ -73,7 +83,6 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
 
     int currentOutVerticesIndex = 0;
     int currentOutTrianglesIndex = 0;
-    outTrianglesCount = 0;
 
     for (int mesh_idx = 0; mesh_idx < mesh_count; ++mesh_idx) {
         const ofbx::Mesh& mesh = *g_scene->getMesh(mesh_idx);
@@ -108,7 +117,6 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
                     outTriangles[currentOutTrianglesIndex + 1] = polygon.from_vertex + 1;
                     outTriangles[currentOutTrianglesIndex + 2] = polygon.from_vertex + 2;
                     currentOutTrianglesIndex += 3;
-                    outTrianglesCount += 3;
                 }
                 else if (polygon.vertex_count == 4) {
 
@@ -121,7 +129,6 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
                     outTriangles[currentOutTrianglesIndex + 5] = polygon.from_vertex + 3;
 
                     currentOutTrianglesIndex += 6;
-                    outTrianglesCount += 6;
                 }
                 else {
                     for (int tri = 0; tri < polygon.vertex_count - 2; ++tri) {
@@ -130,7 +137,6 @@ bool FbxImporter::ImportFBX(const char* filepath, std::vector<GLfloat>& outVerti
                         outTriangles[currentOutTrianglesIndex + tri * 3 + 2] = polygon.from_vertex + 2 + tri;
                     }
                     currentOutTrianglesIndex += 3 * (polygon.vertex_count - 2);
-                    outTrianglesCount += 3 * (polygon.vertex_count - 2);
                 }
             }
         }
